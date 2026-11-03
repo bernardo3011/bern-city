@@ -1,0 +1,115 @@
+{
+  "_how": "Edit this file on GitHub to update Bern City. status: live | in the shop | building | next up | queued | done | for sale | info. progress: 0 to 1. New ids get a new building on a free plot.",
+  "credits": {
+    "left": 250,
+    "total": 270,
+    "plan": "Higgsfield Starter"
+  },
+  "buildings": [
+    {
+      "id": "hq",
+      "name": "Control Room",
+      "kind": "HQ · this app",
+      "status": "building",
+      "progress": 0.35,
+      "now": "First look at the city shell. Jarvis is wired in.",
+      "next": "Populate with real feeds: email, calendar, money.",
+      "links": []
+    },
+    {
+      "id": "rabieta",
+      "name": "Rabieta",
+      "kind": "Client site · DJ",
+      "status": "live",
+      "progress": 1,
+      "now": "Live. Booking form emails Ricky.",
+      "next": "Waiting on Ricky's feedback and form activation test.",
+      "links": [
+        [
+          "Open site",
+          "https://rabietasound.github.io"
+        ]
+      ]
+    },
+    {
+      "id": "berns",
+      "name": "Bern's List",
+      "kind": "Personal map · Miami",
+      "status": "live",
+      "progress": 0.85,
+      "now": "Live with 102 spots, wheel, tour and owner approvals.",
+      "next": "Direct reservation pages for every spot that takes them (last on the list).",
+      "links": [
+        [
+          "Open map",
+          "https://bernardo3011.github.io/berns-list/"
+        ]
+      ]
+    },
+    {
+      "id": "fratesi",
+      "name": "Fratesi's",
+      "kind": "Pitch site · Pizza",
+      "status": "in the shop",
+      "progress": 0.6,
+      "now": "Concept live. Full-size Instagram photos collected.",
+      "next": "Real-photo slicing, better channel photos, readable hero text.",
+      "links": [
+        [
+          "Open concept",
+          "https://fratesi-s.github.io"
+        ]
+      ]
+    },
+    {
+      "id": "clock",
+      "name": "Clock Tower",
+      "kind": "Scheduled tasks",
+      "status": "live",
+      "progress": 1,
+      "now": "10 tasks running: weekday briefing and job leads, nightly client inbox watch, weekly site check, Bern's List refresh and recap, monthly invoice, credits and client check-ins.",
+      "next": "One-time: Ricky nudge Nov 6. Fratesi's follow-up once you pitch.",
+      "links": []
+    },
+    {
+      "id": "law",
+      "name": "Law Office",
+      "kind": "Client agreement",
+      "status": "queued",
+      "progress": 0,
+      "now": "Not started.",
+      "next": "Agreement draft plus a plain-English guide to your responsibilities.",
+      "links": []
+    },
+    {
+      "id": "shop",
+      "name": "Workshop",
+      "kind": "3D prints · Bambu Lab",
+      "status": "queued",
+      "progress": 0,
+      "now": "Not started.",
+      "next": "Two Fratesi's keychain designs, then a look at physical products.",
+      "links": []
+    },
+    {
+      "id": "vault",
+      "name": "The Vault",
+      "kind": "Credits & money",
+      "status": "info",
+      "progress": 0.93,
+      "now": "250 of 270 Higgsfield Starter credits left. Used: Rabieta 2, Bern's 12, Fratesi's 6.",
+      "next": "Free unlimited Seedream and FLUX until Dec 6.",
+      "links": []
+    },
+    {
+      "id": "lot",
+      "name": "Open Lot",
+      "kind": "Next build",
+      "status": "for sale",
+      "progress": 0,
+      "now": "Empty land waiting for the next idea.",
+      "next": "Tell Jarvis or Claude what goes here and the city grows.",
+      "links": []
+    }
+  ]
+}
