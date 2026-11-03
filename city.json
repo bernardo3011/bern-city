@@ -67,8 +67,8 @@
       "kind": "Scheduled tasks",
       "status": "live",
       "progress": 1,
-      "now": "10 tasks running: weekday briefing and job leads, nightly client inbox watch, weekly site check, Bern's List refresh and recap, monthly invoice, credits and client check-ins.",
-      "next": "One-time: Ricky nudge Nov 6. Fratesi's follow-up once you pitch.",
+      "now": "10 scheduled tasks running. Each one is a small tower on the street behind the Clock Tower.",
+      "next": "Fratesi's follow-up gets added once you pitch.",
       "links": []
     },
     {
@@ -110,6 +110,196 @@
       "now": "Empty land waiting for the next idea.",
       "next": "Tell Jarvis or Claude what goes here and the city grows.",
       "links": []
+    },
+    {
+      "id": "t-brief",
+      "name": "Morning briefing",
+      "sign": "BRIEFING",
+      "kind": "Scheduled task · Weekdays 7:47am",
+      "color": "#7fe0ff",
+      "status": "live",
+      "progress": 1,
+      "now": "Calendar, inbox and open jobs in 30 seconds.",
+      "next": "Runs Weekdays 7:47am. Results land as a push notification.",
+      "links": [],
+      "plot": [
+        -31.5,
+        -28,
+        4,
+        4,
+        9
+      ]
+    },
+    {
+      "id": "t-jobs",
+      "name": "Job leads",
+      "sign": "JOBS",
+      "kind": "Scheduled task · Weekdays 1:11pm",
+      "color": "#7fe0ff",
+      "status": "live",
+      "progress": 1,
+      "now": "New Miami/remote BD, sales, hospitality and event roles plus application updates.",
+      "next": "Runs Weekdays 1:11pm. Results land as a push notification.",
+      "links": [],
+      "plot": [
+        -24.5,
+        -28,
+        4,
+        4,
+        9
+      ]
+    },
+    {
+      "id": "t-inbox",
+      "name": "Client inbox watch",
+      "sign": "INBOX",
+      "kind": "Scheduled task · Daily 6:17pm",
+      "color": "#7fe0ff",
+      "status": "live",
+      "progress": 1,
+      "now": "Ricky, Fratesi's and FormSubmit emails that need you.",
+      "next": "Runs Daily 6:17pm. Results land as a push notification.",
+      "links": [],
+      "plot": [
+        -17.5,
+        -28,
+        4,
+        4,
+        9
+      ]
+    },
+    {
+      "id": "t-health",
+      "name": "Site health check",
+      "sign": "HEALTH",
+      "kind": "Scheduled task · Mondays 8:23am",
+      "color": "#7fe0ff",
+      "status": "live",
+      "progress": 1,
+      "now": "Checks all 4 sites and booking links. Needs your Mac on.",
+      "next": "Runs Mondays 8:23am. Results land as a push notification.",
+      "links": [],
+      "plot": [
+        -10.5,
+        -28,
+        4,
+        4,
+        7
+      ]
+    },
+    {
+      "id": "t-weekend",
+      "name": "Bern's List refresh",
+      "sign": "WEEKEND",
+      "kind": "Scheduled task · Thursdays 4:41pm",
+      "color": "#7fe0ff",
+      "status": "live",
+      "progress": 1,
+      "now": "5 new Miami openings plus 3 Want-to-go picks.",
+      "next": "Runs Thursdays 4:41pm. Results land as a push notification.",
+      "links": [],
+      "plot": [
+        -3.5,
+        -28,
+        4,
+        4,
+        7
+      ]
+    },
+    {
+      "id": "t-recap",
+      "name": "Weekly recap",
+      "sign": "RECAP",
+      "kind": "Scheduled task · Sundays 7:19pm",
+      "color": "#7fe0ff",
+      "status": "live",
+      "progress": 1,
+      "now": "What shipped, what's waiting, credits, top 3 for the week.",
+      "next": "Runs Sundays 7:19pm. Results land as a push notification.",
+      "links": [],
+      "plot": [
+        3.5,
+        -28,
+        4,
+        4,
+        7
+      ]
+    },
+    {
+      "id": "t-invoice",
+      "name": "PRIMA invoice",
+      "sign": "INVOICE",
+      "kind": "Scheduled task · 1st of the month",
+      "color": "#b7a6ff",
+      "status": "live",
+      "progress": 1,
+      "now": "Reminder with last month's invoice as a template.",
+      "next": "Runs 1st of the month. Results land as a push notification.",
+      "links": [],
+      "plot": [
+        10.5,
+        -28,
+        4,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "t-credits",
+      "name": "Credits & renewals",
+      "sign": "CREDITS",
+      "kind": "Scheduled task · 28th of the month",
+      "color": "#b7a6ff",
+      "status": "live",
+      "progress": 1,
+      "now": "Higgsfield balance, renewals and expiring deals.",
+      "next": "Runs 28th of the month. Results land as a push notification.",
+      "links": [],
+      "plot": [
+        17.5,
+        -28,
+        4,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "t-checkin",
+      "name": "Client check-ins",
+      "sign": "CHECK-IN",
+      "kind": "Scheduled task · 15th of the month",
+      "color": "#b7a6ff",
+      "status": "live",
+      "progress": 1,
+      "now": "Drafts a casual text for each client.",
+      "next": "Runs 15th of the month. Results land as a push notification.",
+      "links": [],
+      "plot": [
+        24.5,
+        -28,
+        4,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "t-ricky",
+      "name": "Nudge Ricky",
+      "sign": "RICKY",
+      "kind": "Scheduled task · Once · Fri Nov 6, noon",
+      "color": "#b7a6ff",
+      "status": "next up",
+      "progress": 0,
+      "now": "Feedback + form activation nudge.",
+      "next": "Runs Once · Fri Nov 6, noon. Results land as a push notification.",
+      "links": [],
+      "plot": [
+        31.5,
+        -28,
+        4,
+        4,
+        4
+      ]
     }
   ]
 }
