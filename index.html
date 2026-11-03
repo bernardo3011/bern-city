@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"><meta name="theme-color" content="#07060f"><style>*{box-sizing:border-box}:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0;font-size:14px}[hidden]{display:none!important}</style>
+<title>Bern City</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bern City">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tilt+Neon&family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one full-screen night city you pan sideways; HUD floats on top, Jarvis orb bottom-right, building cards rise from the bottom. Single committed dark look. */
+:root{
+  --night:#07060f; --night-2:#0f0c22; --glass:rgba(14,12,34,.72); --line:rgba(160,150,255,.18);
+  --fg:#ece9ff; --dim:#9a94c4;
+  --cyan:#38f3ff; --pink:#ff3ea5; --amber:#ffb547; --live:#7dff8a; --red:#ff5a4e; --violet:#a98bff;
+  --f-neon:"Tilt Neon","Chakra Petch",system-ui,sans-serif;
+  --f-ui:"Chakra Petch",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--night);color:var(--fg);font-family:var(--f-ui);-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--night)}
+#city{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:pan-y;cursor:grab}
+#city.drag{cursor:grabbing}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+/* HUD */
+.hud{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);z-index:5;pointer-events:none;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 0;
+  display:flex;flex-direction:column;gap:10px}
+.hud > *{pointer-events:auto}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.brand{font-family:var(--f-neon);font-size:clamp(26px,5vw,40px);line-height:1;letter-spacing:.04em;color:#fff;
+  text-shadow:0 0 6px var(--pink),0 0 18px var(--pink),0 0 36px rgba(255,62,165,.6)}
+.brand small{display:block;font-family:var(--f-mono);font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--cyan);text-shadow:0 0 8px rgba(56,243,255,.6);margin-top:6px}
+.clock{font-family:var(--f-mono);text-align:right;font-variant-numeric:tabular-nums}
+.clock b{display:block;font-size:20px;font-weight:600;color:var(--cyan);text-shadow:0 0 10px rgba(56,243,255,.55)}
+.clock span{font-size:10px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+.stats{display:flex;gap:8px;flex-wrap:wrap}
+.stat{background:var(--glass);border:1px solid var(--line);border-radius:4px;padding:6px 10px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  display:flex;align-items:baseline;gap:7px;font-family:var(--f-mono);font-size:11px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+.stat b{font-size:15px;color:var(--fg);font-variant-numeric:tabular-nums}
+.stat i{width:6px;height:6px;border-radius:50%;align-self:center;font-style:normal}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px));padding-bottom:4px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;background:rgba(7,6,15,.6);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:500;letter-spacing:.04em;cursor:pointer;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.chip i{width:7px;height:7px;border-radius:50%;box-shadow:0 0 8px currentColor}
+.chip:hover,.chip[aria-pressed="true"]{border-color:currentColor;background:rgba(20,16,48,.85)}
+
+/* Building card */
+.sheet{position:fixed;z-index:6;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  width:min(400px,calc(100vw - 32px));background:var(--glass);border:1px solid var(--line);border-radius:10px;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:16px 16px 14px;
+  transform:translateY(calc(100% + 40px));transition:transform .45s cubic-bezier(.2,.9,.2,1);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.sheet.open{transform:none}
+.sheet .bar{position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:10px 0 0 10px;background:var(--c);box-shadow:0 0 14px var(--c)}
+.sheet header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.sheet .kind{font-family:var(--f-mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
+.sheet h2{font-family:var(--f-neon);font-weight:400;font-size:28px;margin:4px 0 0;color:#fff;text-shadow:0 0 12px var(--c);text-wrap:balance}
+.x{background:none;border:1px solid var(--line);border-radius:6px;width:32px;height:32px;cursor:pointer;color:var(--dim);flex:none}
+.pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:3px 8px;border-radius:3px;border:1px solid currentColor;margin-top:10px}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 6px currentColor}
+.prog{margin-top:12px;display:flex;align-items:center;gap:10px;font-family:var(--f-mono);font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
+.prog div{flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden}
+.prog div span{display:block;height:100%;background:var(--c);box-shadow:0 0 10px var(--c)}
+.rows{display:grid;gap:8px;margin-top:12px;font-size:14px;line-height:1.45}
+.rows p{margin:0;display:grid;grid-template-columns:52px 1fr;gap:8px}
+.rows p b{font-family:var(--f-mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:400;padding-top:3px}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.btn{display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 12px;border-radius:6px;border:1px solid var(--c);color:var(--fg);background:rgba(255,255,255,.03);cursor:pointer}
+.btn:hover{background:rgba(255,255,255,.08)}
+.btn.ghost{border-color:var(--line);color:var(--dim)}
+
+/* Jarvis */
+.orb{position:fixed;z-index:7;right:max(18px,calc(env(safe-area-inset-right,0px) + 18px));bottom:calc(18px + env(safe-area-inset-bottom,0px));
+  width:64px;height:64px;border-radius:50%;border:0;cursor:pointer;background:transparent;padding:0}
+.orb .core{position:absolute;inset:12px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0,#9ffaff 18%,var(--cyan) 42%,#0a5b8a 78%,#05203a 100%);
+  box-shadow:0 0 18px var(--cyan),0 0 46px rgba(56,243,255,.45);animation:breathe 3.2s ease-in-out infinite}
+.orb .ring{position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(56,243,255,.55);border-top-color:transparent;border-left-color:transparent;animation:spin 6s linear infinite}
+.orb .ring.b{inset:5px;border-color:rgba(255,62,165,.5);border-bottom-color:transparent;border-right-color:transparent;animation-duration:9s;animation-direction:reverse}
+.orb.think .core{animation-duration:.9s}
+.orb .tag{position:absolute;right:72px;top:50%;transform:translateY(-50%);font-family:var(--f-mono);font-size:10px;letter-spacing:.24em;color:var(--cyan);text-shadow:0 0 8px rgba(56,243,255,.6);white-space:nowrap}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes breathe{50%{transform:scale(.88);filter:brightness(1.25)}}
+.jar{position:fixed;z-index:7;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(96px + env(safe-area-inset-bottom,0px));
+  width:min(390px,calc(100vw - 32px));height:min(540px,calc(100% - 200px));display:flex;flex-direction:column;
+  background:rgba(8,10,26,.86);border:1px solid rgba(56,243,255,.28);border-radius:12px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  box-shadow:0 0 0 1px rgba(56,243,255,.05),0 24px 70px rgba(0,0,0,.6);transform-origin:bottom right;transition:transform .3s,opacity .3s}
+.jar[hidden]{display:flex!important;opacity:0;transform:scale(.6) translateY(30px);pointer-events:none;visibility:hidden}
+.jar header{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.jar header b{font-family:var(--f-neon);font-weight:400;font-size:22px;color:#fff;text-shadow:0 0 10px var(--cyan)}
+.jar header span{font-family:var(--f-mono);font-size:10px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase;display:block}
+.log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:0}
+.msg{max-width:88%;font-size:14px;line-height:1.5;padding:9px 12px;border-radius:10px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.j{background:rgba(56,243,255,.07);border:1px solid rgba(56,243,255,.18);align-self:flex-start}
+.msg.u{background:rgba(255,62,165,.12);border:1px solid rgba(255,62,165,.25);align-self:flex-end}
+.sugs{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 10px}
+.sugs button{background:none;border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-size:12px;color:var(--dim);cursor:pointer}
+.sugs button:hover{color:var(--fg);border-color:var(--cyan)}
+.jar form{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line)}
+.jar input{flex:1;min-width:0;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:10px 12px;color:var(--fg);font:15px var(--f-ui)}
+.jar input::placeholder{color:#6f6a96}
+.jar .mic{background:none;border:1px solid var(--line);border-radius:8px;width:44px;padding:0;color:var(--cyan);display:grid;place-items:center;cursor:pointer;flex:none}
+.jar .mic.on{border-color:var(--pink);color:var(--pink);box-shadow:0 0 14px rgba(255,62,165,.6);animation:breathe 1.2s ease-in-out infinite}
+#voice[aria-pressed="true"]{border-color:var(--cyan);color:var(--cyan)}
+.jar form button[type=submit]{background:var(--cyan);color:#041018;border:0;border-radius:8px;padding:0 14px;font-weight:700;cursor:pointer}
+.hint{position:fixed;z-index:4;left:50%;bottom:calc(26px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);font-family:var(--f-mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);transition:opacity .6s;pointer-events:none;white-space:nowrap}
+@media (max-width:560px){ .orb .tag{display:none} .sheet{bottom:calc(96px + env(safe-area-inset-bottom,0px))} .hint{bottom:calc(100px + env(safe-area-inset-bottom,0px))} }
+@media (prefers-reduced-motion:reduce){ .orb .core,.orb .ring{animation:none} .sheet,.jar{transition:none} }
+</style>
+
+</head><body>
+<canvas id="city" aria-label="Neon city skyline. Each building is one of Bernardo's projects."></canvas>
+
+<div class="hud">
+  <div class="top">
+    <div class="brand">Bern City<small>Control room · Miami</small></div>
+    <div class="clock"><b id="time">--:--</b><span id="date">Miami</span></div>
+  </div>
+  <div class="stats" id="stats"></div>
+  <nav class="chips" id="chips" aria-label="Buildings"></nav>
+</div>
+
+<div class="hint" id="hint">Drag to pan · tap a building</div>
+
+<section class="sheet" id="sheet" aria-live="polite">
+  <div class="bar"></div>
+  <header>
+    <div><div class="kind" id="sKind"></div><h2 id="sName"></h2></div>
+    <button class="x" id="sClose" aria-label="Close card">✕</button>
+  </header>
+  <span class="pill" id="sPill"></span>
+  <div class="prog"><div><span id="sBar"></span></div><em id="sPct"></em></div>
+  <div class="rows">
+    <p><b>Now</b><span id="sNow"></span></p>
+    <p><b>Next</b><span id="sNext"></span></p>
+  </div>
+  <div class="acts" id="sActs"></div>
+</section>
+
+<button class="orb" id="orb" aria-label="Talk to Jarvis" aria-expanded="false"><span class="ring"></span><span class="ring b"></span><span class="core"></span><span class="tag">JARVIS</span></button>
+
+<section class="jar" id="jar" hidden aria-label="Jarvis">
+  <header><div><b>Jarvis</b><span id="jStat">Online · knows the whole city</span></div><div style="display:flex;gap:6px"><button class="x" id="voice" aria-pressed="false" aria-label="Jarvis speaks replies" title="Jarvis speaks replies">🔈</button><button class="x" id="jClose" aria-label="Close Jarvis">✕</button></div></header>
+  <div class="log" id="log"></div>
+  <div class="sugs" id="sugs"></div>
+  <form id="jForm"><button type="button" class="mic" id="mic" aria-label="Talk to Jarvis" title="Talk to Jarvis"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button><input id="jIn" autocomplete="off" placeholder="Ask or tap the mic…" aria-label="Message Jarvis"><button type="submit">Send</button></form>
+</section>
+
+<script>
+/* ---------- City data (the town's "census") ---------- */
+const CREDITS = { left: 250, total: 270, plan: "Higgsfield Starter" };
+const B = [
+  { id:"hq", name:"Control Room", kind:"HQ · this app", color:"#38f3ff", status:"building", progress:.35,
+    now:"First look at the city shell. Jarvis is wired in.", next:"Populate with real feeds: email, calendar, money.", links:[],
+    x:8, w:22, h:42, sign:"HQ" },
+  { id:"rabieta", name:"Rabieta", kind:"Client site · DJ", color:"#ff3ea5", status:"live", progress:1,
+    now:"Live. Booking form emails Ricky.", next:"Waiting on Ricky's feedback and form activation test.",
+    links:[["Open site","https://rabietasound.github.io"]], x:38, w:16, h:35, sign:"RABIETA" },
+  { id:"berns", name:"Bern's List", kind:"Personal map · Miami", color:"#ffb547", status:"live", progress:.85,
+    now:"Live with 102 spots, wheel, tour and owner approvals.", next:"Direct reservation pages for every spot that takes them (last on the list).",
+    links:[["Open map","https://bernardo3011.github.io/berns-list/"]], x:60, w:24, h:29, sign:"BERN'S" },
+  { id:"fratesi", name:"Fratesi's", kind:"Pitch site · Pizza", color:"#ff5a4e", status:"in the shop", progress:.6,
+    now:"Concept live. Full-size Instagram photos collected.", next:"Real-photo slicing, better channel photos, readable hero text.",
+    links:[["Open concept","https://fratesi-s.github.io"]], x:90, w:18, h:23, sign:"FRATESI'S" },
+  { id:"clock", name:"Clock Tower", kind:"Scheduled tasks", color:"#7fe0ff", status:"next up", progress:.05,
+    now:"Plot reserved.", next:"Recurring jobs: briefings, credit checks, site health pings.", links:[],
+    x:116, w:11, h:45, sign:"TASKS" },
+  { id:"law", name:"Law Office", kind:"Client agreement", color:"#a98bff", status:"queued", progress:0,
+    now:"Not started.", next:"Agreement draft plus a plain-English guide to your responsibilities.", links:[],
+    x:135, w:20, h:25, sign:"LEGAL" },
+  { id:"shop", name:"Workshop", kind:"3D prints · Bambu Lab", color:"#7dff8a", status:"queued", progress:0,
+    now:"Not started.", next:"Two Fratesi's keychain designs, then a look at physical products.", links:[],
+    x:163, w:22, h:17, sign:"WORKSHOP" },
+  { id:"vault", name:"The Vault", kind:"Credits & money", color:"#ffd36b", status:"info", progress:CREDITS.left/CREDITS.total,
+    now:`${CREDITS.left} of ${CREDITS.total} ${CREDITS.plan} credits left. Used: Rabieta 2, Bern's 12, Fratesi's 6.`, next:"Free unlimited Seedream and FLUX until Dec 6.",
+    links:[], x:193, w:18, h:21, sign:"VAULT" },
+  { id:"lot", name:"Open Lot", kind:"Next build", color:"#9a94c4", status:"for sale", progress:0, lot:true,
+    now:"Empty land waiting for the next idea.", next:"Tell Jarvis or Claude what goes here and the city grows.", links:[],
+    x:220, w:28, h:0, sign:"FOR SALE" },
+];
+const WORLD = 256; // world width in units (1 unit = 1% of screen height)
+const STATUS_COLOR = { "live":"#7dff8a", "in the shop":"#ffb547", "building":"#38f3ff", "next up":"#7fe0ff", "queued":"#9a94c4", "info":"#ffd36b", "for sale":"#9a94c4" };
+
+/* ---------- HUD ---------- */
+const $ = id => document.getElementById(id);
+function tick(){
+  const d = new Date();
+  $("time").textContent = d.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"numeric",minute:"2-digit"});
+  $("date").textContent = d.toLocaleDateString("en-US",{timeZone:"America/New_York",weekday:"short",month:"short",day:"numeric"}) + " · Miami";
+}
+tick(); setInterval(tick, 15000);
+const count = s => B.filter(b=>b.status===s).length;
+$("stats").innerHTML = [
+  ["Live", count("live"), "#7dff8a"], ["In the shop", count("in the shop")+count("building"), "#ffb547"],
+  ["Queued", count("queued")+count("next up"), "#9a94c4"], ["Credits", CREDITS.left, "#ffd36b"]
+].map(([l,n,c])=>`<div class="stat"><i style="background:${c};box-shadow:0 0 8px ${c}"></i>${l}<b>${n}</b></div>`).join("");
+$("chips").innerHTML = B.map(b=>`<button class="chip" data-id="${b.id}" style="color:${b.color}" aria-pressed="false"><i style="background:${b.color}"></i><span style="color:var(--fg)">${b.name}</span></button>`).join("");
+$("chips").addEventListener("click", e=>{ const c=e.target.closest(".chip"); if(c) focusBuilding(B.find(b=>b.id===c.dataset.id)); });
+
+/* ---------- Canvas city ---------- */
+const cv = $("city"), ctx = cv.getContext("2d");
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let W=0,H=0,U=0,dpr=1, cam=0, camT=0, selected=null;
+function rng(seed){ let s=seed>>>0||1; return ()=>((s=Math.imul(s^s>>>15,1|s),s^=s+Math.imul(s^s>>>7,61|s),((s^s>>>14)>>>0)/4294967296)); }
+// far and mid silhouettes
+const far=[], mid=[]; { const r=rng(7); let x=-10; while(x<WORLD+40){ const w=4+r()*9; far.push({x,w,h:18+r()*34,ant:r()<.2}); x+=w+r()*1.5; }
+  x=-10; while(x<WORLD+40){ const w=6+r()*10; mid.push({x,w,h:12+r()*26,seed:(r()*1e9)|0}); x+=w+2+r()*5; } }
+const stars=[]; { const r=rng(3); for(let i=0;i<160;i++) stars.push({x:r(),y:r()*.5,s:r()*1.2+.2,t:r()*6}); }
+const cars=[]; { const r=rng(11); for(let i=0;i<14;i++) cars.push({x:r()*WORLD,lane:r()<.5?0:1,v:(r()*8+6)*(r()<.5?1:-1)}); }
+const drops=[]; { const r=rng(19); for(let i=0;i<90;i++) drops.push({x:r(),y:r(),l:r()*.03+.015,v:r()*.6+.9}); }
+B.forEach((b,i)=>b.seed=1000+i*97);
+
+function resize(){
+  dpr=Math.min(2,devicePixelRatio||1); W=innerWidth; H=innerHeight; U=H/100;
+  cv.width=W*dpr; cv.height=H*dpr; maxCam(); cam=Math.min(cam,maxCam()); camT=Math.min(camT,maxCam());
+}
+const maxCam = ()=>Math.max(0, WORLD*U - W);
+addEventListener("resize", resize); resize();
+const GROUND = 74; // ground line, % of height
+
+function sx(xu, par=1){ return xu*U - cam*par; }
+
+function drawSky(t){
+  const g=ctx.createLinearGradient(0,0,0,H*GROUND/100);
+  g.addColorStop(0,"#05040d"); g.addColorStop(.55,"#130a2e"); g.addColorStop(1,"#3a0f45");
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  for(const s of stars){ const a=.35+.35*Math.sin(t*.8+s.t); ctx.fillStyle=`rgba(220,215,255,${a})`; ctx.fillRect(((s.x*W*1.4 - cam*.05)%(W*1.4)+W*1.4)%(W*1.4), s.y*H, s.s, s.s); }
+  // moon
+  const mx=W*.78 - cam*.03, my=H*.2, mr=U*5;
+  const mg=ctx.createRadialGradient(mx,my,mr*.2,mx,my,mr*4); mg.addColorStop(0,"rgba(255,120,200,.25)"); mg.addColorStop(1,"rgba(255,120,200,0)");
+  ctx.fillStyle=mg; ctx.fillRect(mx-mr*4,my-mr*4,mr*8,mr*8);
+  ctx.fillStyle="#ffd9ef"; ctx.beginPath(); ctx.arc(mx,my,mr,0,7); ctx.fill();
+  ctx.fillStyle="#130a2e"; for(let i=0;i<5;i++){ ctx.fillRect(mx-mr*1.2, my+mr*(.15+i*.2), mr*2.4, mr*.07); }
+  // horizon haze
+  const hz=ctx.createLinearGradient(0,H*.45,0,H*GROUND/100); hz.addColorStop(0,"rgba(255,62,165,0)"); hz.addColorStop(1,"rgba(255,62,165,.22)");
+  ctx.fillStyle=hz; ctx.fillRect(0,H*.45,W,H*(GROUND/100-.45));
+}
+function drawLayer(list, par, base, color, windows){
+  const gy=H*GROUND/100;
+  for(const b of list){
+    const x=sx(b.x,par)%(WORLD*U*par+W) , w=b.w*U, h=b.h*U;
+    if(x+w<-20||x>W+20) continue;
+    ctx.fillStyle=color; ctx.fillRect(x,gy-h-base*U,w,h+base*U);
+    if(b.ant){ ctx.fillRect(x+w/2-1,gy-h-base*U-U*4,2,U*4); }
+    if(windows){ const r=rng(b.seed); ctx.fillStyle="rgba(255,190,240,.16)";
+      for(let yy=gy-h+U*1.5; yy<gy-U; yy+=U*2.2) for(let xx=x+U; xx<x+w-U; xx+=U*1.6) if(r()<.28) ctx.fillRect(xx,yy,U*.6,U*.9); }
+  }
+}
+function neonText(txt, x, y, size, color, flick){
+  ctx.font=`${size}px "Tilt Neon", "Chakra Petch", sans-serif`; ctx.textAlign="center"; ctx.textBaseline="alphabetic";
+  const a = flick ? .25 : 1;
+  ctx.globalAlpha=a; ctx.shadowColor=color; ctx.shadowBlur=size*.9; ctx.fillStyle=color; ctx.fillText(txt,x,y);
+  ctx.shadowBlur=size*.3; ctx.fillStyle="#fff"; ctx.globalAlpha=a*.85; ctx.fillText(txt,x,y);
+  ctx.shadowBlur=0; ctx.globalAlpha=1;
+}
+function drawBuilding(b,t){
+  const gy=H*GROUND/100, x=sx(b.x), w=b.w*U, h=b.h*U, top=gy-h;
+  b.box=[x, b.lot? gy-U*30 : top-U*9, w, b.lot? U*30 : h+U*9];
+  if(x+w<-40||x>W+40) return;
+  const hot = selected===b;
+  if(b.lot){ // empty lot with crane and fence
+    ctx.strokeStyle="rgba(154,148,196,.55)"; ctx.lineWidth=1.5;
+    const cx=x+w*.25; ctx.beginPath(); ctx.moveTo(cx,gy); ctx.lineTo(cx,gy-U*26); ctx.lineTo(cx+w*.7,gy-U*26); ctx.moveTo(cx-U*3,gy-U*26); ctx.lineTo(cx,gy-U*26);
+    for(let yy=gy; yy>gy-U*26; yy-=U*2){ ctx.moveTo(cx-U*.8,yy); ctx.lineTo(cx+U*.8,yy-U*2); } ctx.stroke();
+    const hookX=cx+w*.55+Math.sin(t*.6)*U*.6; ctx.beginPath(); ctx.moveTo(hookX,gy-U*26); ctx.lineTo(hookX,gy-U*14); ctx.stroke();
+    ctx.fillStyle="rgba(154,148,196,.6)"; ctx.fillRect(hookX-U*1.5,gy-U*14,U*3,U*1.4);
+    ctx.fillStyle=(t*2|0)%2? "#ff5a4e":"rgba(255,90,78,.25)"; ctx.beginPath(); ctx.arc(cx+w*.7,gy-U*26,U*.45,0,7); ctx.fill();
+    ctx.strokeStyle="rgba(154,148,196,.35)"; ctx.setLineDash([U*.6,U*.6]); ctx.strokeRect(x,gy-U*3,w,U*3); ctx.setLineDash([]);
+    neonText(b.sign, x+w/2, gy-U*5, U*2.6, hot?"#fff":"#b9b3e6", false);
+    return;
+  }
+  // body
+  const g=ctx.createLinearGradient(x,0,x+w,0); g.addColorStop(0,"#120f2a"); g.addColorStop(.5,"#1b1640"); g.addColorStop(1,"#0c0a1e");
+  ctx.fillStyle=g; ctx.fillRect(x,top,w,h);
+  ctx.strokeStyle=b.color; ctx.globalAlpha=hot?.95:.45; ctx.lineWidth=hot?2:1; ctx.shadowColor=b.color; ctx.shadowBlur=hot?18:8;
+  ctx.strokeRect(x+.5,top+.5,w-1,h-1); ctx.shadowBlur=0; ctx.globalAlpha=1;
+  // windows: floors lit from the ground up by progress, plus random life
+  const r=rng(b.seed), cols=Math.max(2,Math.floor(w/(U*1.9))), rows=Math.max(2,Math.floor(h/(U*2.4)));
+  const cw=(w-U*1.6)/cols, rh=(h-U*2)/rows, litRows=Math.round(rows*b.progress);
+  for(let ry=0; ry<rows; ry++) for(let cx=0; cx<cols; cx++){
+    const rr=r(), fromBottom=rows-1-ry, wx=x+U*.8+cx*cw+cw*.18, wy=top+U*1.2+ry*rh+rh*.2;
+    let col=null;
+    if(fromBottom<litRows) col = rr<.82 ? b.color : "#fff3c4";
+    else if(rr<.12) col="rgba(255,230,190,.55)";
+    if(!col) { ctx.fillStyle="rgba(255,255,255,.035)"; ctx.fillRect(wx,wy,cw*.64,rh*.56); continue; }
+    const flick = !reduce && rr>.97 && Math.sin(t*3+rr*50)>.6;
+    ctx.globalAlpha = flick?.25:(fromBottom<litRows?.85:.6); ctx.fillStyle=col; ctx.fillRect(wx,wy,cw*.64,rh*.56);
+  }
+  ctx.globalAlpha=1;
+  // antenna + blinking light
+  ctx.fillStyle="#2a2450"; ctx.fillRect(x+w*.7,top-U*4,U*.35,U*4);
+  ctx.fillStyle = (Math.sin(t*2+b.seed)>0)? "#ff3a5e":"rgba(255,58,94,.2)"; ctx.beginPath(); ctx.arc(x+w*.7+U*.18,top-U*4,U*.45,0,7); ctx.fill();
+  // sign
+  const fl = !reduce && b.status!=="live" && b.status!=="info" && Math.sin(t*7+b.seed)>.985;
+  const size = Math.min(U*3.2, w/(b.sign.length*.5));
+  neonText(b.sign, x+w/2, top-U*1.6, size, b.color, fl);
+  // status beacon on roof edge
+  const sc=STATUS_COLOR[b.status]; ctx.fillStyle=sc; ctx.shadowColor=sc; ctx.shadowBlur=10;
+  ctx.beginPath(); ctx.arc(x+U*1.2, top+U*1.1, U*.5, 0, 7); ctx.fill(); ctx.shadowBlur=0;
+}
+function drawStreet(t, dt){
+  const gy=H*GROUND/100;
+  // reflection of everything above the ground line
+  ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=.28;
+  ctx.translate(0, gy*dpr*2); ctx.scale(1,-1);
+  ctx.drawImage(cv, 0, (gy - (H-gy))*dpr, W*dpr, (H-gy)*dpr, 0, (gy - (H-gy))*dpr, W*dpr, (H-gy)*dpr);
+  ctx.restore();
+  const sg=ctx.createLinearGradient(0,gy,0,H); sg.addColorStop(0,"rgba(7,6,15,.55)"); sg.addColorStop(1,"rgba(7,6,15,.96)");
+  ctx.fillStyle=sg; ctx.fillRect(0,gy,W,H-gy);
+  ctx.fillStyle="#ff3ea5"; ctx.shadowColor="#ff3ea5"; ctx.shadowBlur=12; ctx.fillRect(0,gy,W,1.5); ctx.shadowBlur=0;
+  // lane dashes
+  ctx.fillStyle="rgba(255,255,255,.12)"; const ly=gy+U*7; for(let x=-((cam)%(U*6)); x<W; x+=U*6) ctx.fillRect(x,ly,U*2.4,2);
+  // cars
+  for(const c of cars){
+    if(!reduce) c.x = (c.x + c.v*dt + WORLD) % WORLD;
+    const x=sx(c.x), y = gy + U*(c.lane? 9.5:4.5);
+    if(x<-60||x>W+60) continue;
+    const fwd=c.v>0, len=U*(4+Math.abs(c.v)*.25), col = fwd? "rgba(255,70,90,": "rgba(255,245,220,";
+    const tg=ctx.createLinearGradient(x,0,x+(fwd?-len:len),0); tg.addColorStop(0,col+".9)"); tg.addColorStop(1,col+"0)");
+    ctx.fillStyle=tg; ctx.fillRect(Math.min(x,x+(fwd?-len:len)), y, len, U*.45);
+  }
+}
+function drawRain(dt){
+  if(reduce) return; ctx.strokeStyle="rgba(180,200,255,.18)"; ctx.lineWidth=1; ctx.beginPath();
+  for(const d of drops){ d.y += d.v*dt*.6; if(d.y>1) { d.y=-.05; } const x=d.x*W, y=d.y*H; ctx.moveTo(x,y); ctx.lineTo(x-2,y+d.l*H); }
+  ctx.stroke();
+}
+let last=performance.now();
+function frame(now){
+  const t=now/1000, dt=Math.min(.05,(now-last)/1000); last=now;
+  cam += (camT-cam)*(reduce?1:.12);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  drawSky(t);
+  drawLayer(far,.35,0,"#1a0f38",false);
+  drawLayer(mid,.65,0,"#130c2c",true);
+  for(const b of B) drawBuilding(b,t);
+  drawStreet(t,dt);
+  drawRain(dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ---------- Pan + tap ---------- */
+let down=null, moved=0;
+cv.addEventListener("pointerdown", e=>{ down={x:e.clientX,cam:camT}; moved=0; cv.setPointerCapture(e.pointerId); cv.classList.add("drag"); });
+cv.addEventListener("pointermove", e=>{ if(!down) return; const dx=e.clientX-down.x; moved=Math.max(moved,Math.abs(dx)); camT=Math.max(0,Math.min(maxCam(), down.cam-dx)); cam=camT; if(moved>6) $("hint").style.opacity=0; });
+cv.addEventListener("pointerup", e=>{ cv.classList.remove("drag"); const wasTap = down && moved<6; down=null; if(!wasTap) return;
+  const hit=B.find(b=>b.box && e.clientX>=b.box[0] && e.clientX<=b.box[0]+b.box[2] && e.clientY>=b.box[1] && e.clientY<=b.box[1]+b.box[3]);
+  hit ? openCard(hit) : closeCard(); });
+cv.addEventListener("wheel", e=>{ camT=Math.max(0,Math.min(maxCam(), camT + (Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY))); $("hint").style.opacity=0; }, {passive:true});
+addEventListener("keydown", e=>{ if(e.target.tagName==="INPUT") return; if(e.key==="ArrowRight") camT=Math.min(maxCam(),camT+U*20); if(e.key==="ArrowLeft") camT=Math.max(0,camT-U*20); if(e.key==="Escape"){ closeCard(); toggleJar(false); } });
+
+function focusBuilding(b){ camT=Math.max(0,Math.min(maxCam(), (b.x+b.w/2)*U - W*(W<700?.5:.62))); openCard(b); $("hint").style.opacity=0; }
+function openCard(b){
+  selected=b; const s=$("sheet"); s.style.setProperty("--c", b.color);
+  $("sKind").textContent=b.kind; $("sName").textContent=b.name;
+  const pc=STATUS_COLOR[b.status]; $("sPill").textContent=b.status; $("sPill").style.color=pc;
+  $("sBar").style.width=Math.round(b.progress*100)+"%"; $("sPct").textContent=b.id==="vault"? `${CREDITS.left}/${CREDITS.total}` : Math.round(b.progress*100)+"%";
+  $("sNow").textContent=b.now; $("sNext").textContent=b.next;
+  const acts=$("sActs"); acts.innerHTML="";
+  for(const [label,href] of b.links){ const a=document.createElement("a"); a.className="btn"; a.href=href; a.target="_blank"; a.rel="noopener"; a.textContent=label+" ↗"; acts.append(a); }
+  const ask=document.createElement("button"); ask.className="btn ghost"; ask.textContent="Ask Jarvis about this";
+  ask.onclick=()=>{ toggleJar(true); send(b.lot? "What should I build on the open lot next?" : `Brief me on ${b.name}. What's the next move?`); };
+  acts.append(ask);
+  s.classList.add("open");
+  document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", c.dataset.id===b.id));
+}
+function closeCard(){ selected=null; $("sheet").classList.remove("open"); document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed","false")); }
+$("sClose").onclick=closeCard;
+
+/* ---------- Jarvis ---------- */
+const log=$("log"), hist=[];
+let samplerP = null; const sampler = ()=> samplerP ??= (window.claude?.use ? window.claude.use("sample").catch(()=>null) : Promise.resolve(null));
+function hour(){ return +new Date().toLocaleString("en-US",{timeZone:"America/New_York",hour:"numeric",hour12:false}); }
+function greet(){ const h=hour(); return h<5?"Late one":h<12?"Morning":h<18?"Afternoon":"Evening"; }
+function briefing(){
+  return `${greet()}, Bernardo. ${count("live")} sites are live, Fratesi's is in the shop, and ${CREDITS.left} of ${CREDITS.total} credits are in the vault.\nNext on the list: finish Fratesi's, then the Clock Tower (scheduled tasks).`;
+}
+function bubble(who, text){ const d=document.createElement("div"); d.className="msg "+who; d.textContent=text; log.append(d); log.scrollTop=log.scrollHeight; return d; }
+bubble("j", briefing());
+const SUGS=["What's next?","Status on Fratesi's","Write a text to Ricky asking for feedback","What should I build on the open lot?"];
+$("sugs").innerHTML=SUGS.map(s=>`<button type="button">${s}</button>`).join("");
+$("sugs").onclick=e=>{ if(e.target.tagName==="BUTTON") send(e.target.textContent); };
+
+function system(){
+  const city=B.map(b=>`- ${b.name} (${b.kind}) · status: ${b.status} · ${Math.round(b.progress*100)}% · now: ${b.now} · next: ${b.next}${b.links.length?` · url: ${b.links[0][1]}`:""}`).join("\n");
+  return `You are Jarvis, Bernardo's personal assistant, living inside "Bern City", his neon control-room app. Bernardo lives in Miami, works in business development, and runs a side business building cinematic, interactive websites for friends and local businesses. He builds everything by prompting Claude.
+Style: warm, quick, a little witty, like a sharp chief of staff. Keep replies under 120 words unless he asks for more. Plain text, no markdown headers. Short lists with "-" are fine.
+Rules: only state project facts that appear in the city census below; if you don't know, say so. When he wants something built or changed, give him a short, ready-to-paste prompt for Claude, labeled "Prompt for Claude:". When he asks for a message to someone, write it in a casual, friendly voice he could send as-is.
+Current Miami time: ${new Date().toLocaleString("en-US",{timeZone:"America/New_York"})}.
+City census:
+${city}
+Higgsfield credits: ${CREDITS.left}/${CREDITS.total} (${CREDITS.plan}).
+Priority order: Fratesi's fixes, Control Room shell (this app), scheduled tasks, client agreement, keychains, Bern's List reservation links.`;
+}
+let busy=false;
+async function send(text){
+  text=(text||"").trim(); if(!text||busy) return; busy=true;
+  bubble("u", text); hist.push({role:"user",content:text}); $("jIn").value="";
+  const out=bubble("j","…"); $("orb").classList.add("think"); $("jStat").textContent="Thinking…";
+  try{
+    const sample=await sampler();
+    if(!sample){ out.textContent=localReply(text); hist.push({role:"assistant",content:out.textContent}); speak(out.textContent); return; }
+    const msgs=[{role:"user",content:system()+"\n\nReply OK."},{role:"assistant",content:"OK."},...hist.slice(-12)];
+    const r=await sample(msgs,{cache:false,onText:({text})=>{ out.textContent=text||"…"; log.scrollTop=log.scrollHeight; }});
+    out.textContent=r.text; hist.push({role:"assistant",content:r.text}); speak(r.text);
+  }catch(err){
+    hist.pop();
+    out.textContent = err?.code==="not_granted" ? "I need your OK to use Claude here. Ask again and approve the prompt." :
+                      err?.code==="rate_limited" ? "I'm being rate limited. Give me a minute." : "Something glitched on my end. Try that again.";
+  }finally{ busy=false; $("orb").classList.remove("think"); $("jStat").textContent="Online · knows the whole city"; log.scrollTop=log.scrollHeight; }
+}
+function toggleJar(open){ const j=$("jar"); open = open ?? j.hidden; j.hidden=!open; $("orb").setAttribute("aria-expanded",open); if(open) setTimeout(()=>$("jIn").focus({preventScroll:true}),250); }
+$("orb").onclick=()=>toggleJar(); $("jClose").onclick=()=>toggleJar(false);
+$("jForm").addEventListener("submit", e=>{ e.preventDefault(); send($("jIn").value); });
+
+
+/* ---------- Voice: talk to Jarvis, Jarvis talks back ---------- */
+let speakOn=false; try{ speakOn = localStorage.getItem("jv_speak")==="1"; }catch(e){}
+const vBtn=$("voice");
+function setSpeak(on){ speakOn=on; vBtn.setAttribute("aria-pressed",on); vBtn.textContent=on?"🔊":"🔈"; try{ localStorage.setItem("jv_speak",on?"1":"0"); }catch(e){} if(!on) try{ speechSynthesis.cancel(); }catch(e){} }
+setSpeak(speakOn);
+vBtn.onclick=()=>setSpeak(!speakOn);
+function pickVoice(){
+  try{ const vs=speechSynthesis.getVoices(); return vs.find(v=>/Daniel/i.test(v.name)&&/en-GB/i.test(v.lang)) || vs.find(v=>/en-GB/i.test(v.lang)) || vs.find(v=>/^en/i.test(v.lang)); }catch(e){ return null; }
+}
+function speak(text){
+  if(!speakOn || !("speechSynthesis" in window)) return;
+  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text.replace(/Prompt for Claude:[\s\S]*/,"I put a prompt for Claude in the chat.")); const v=pickVoice(); if(v) u.voice=v; u.rate=1.03; u.pitch=.95; speechSynthesis.speak(u); }catch(e){}
+}
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec=null, listening=false;
+function tipDictate(){ const inp=$("jIn"); inp.focus(); inp.placeholder="Tap the mic on your keyboard to dictate"; bubble("j","Voice input is blocked in this view. Tap the mic key on your phone's keyboard and talk, or open the GitHub version of Bern City, where I can listen directly."); }
+$("mic").onclick=()=>{
+  if(listening){ try{ rec.stop(); }catch(e){} return; }
+  if(!SR){ tipDictate(); return; }
+  try{
+    rec=new SR(); rec.lang="en-US"; rec.interimResults=true; rec.continuous=false;
+    let finalText="";
+    rec.onresult=e=>{ let t=""; for(const r of e.results){ t+=r[0].transcript; if(r.isFinal) finalText=t; } $("jIn").value=t; };
+    rec.onerror=e=>{ if(e.error==="not-allowed"||e.error==="service-not-allowed") tipDictate(); };
+    rec.onend=()=>{ listening=false; $("mic").classList.remove("on"); $("jStat").textContent="Online · knows the whole city"; const t=(finalText||$("jIn").value).trim(); if(t){ if(!speakOn) setSpeak(true); send(t); } };
+    rec.start(); listening=true; $("mic").classList.add("on"); $("jStat").textContent="Listening…"; try{ speechSynthesis.cancel(); }catch(e){}
+  }catch(e){ listening=false; tipDictate(); }
+};
+
+/* ---------- Local brain (used when Claude isn't reachable, e.g. on GitHub) ---------- */
+function localReply(text){
+  const q=text.toLowerCase();
+  const b=B.find(b=>[b.id,b.name,b.sign].some(k=>q.includes(k.toLowerCase().replace(/[’']/g,"")) || q.includes(k.toLowerCase())) || (b.id==="berns"&&/bern'?s list|map/.test(q)) || (b.id==="clock"&&/schedul/.test(q)) || (b.id==="law"&&/agree|contract/.test(q)) || (b.id==="shop"&&/keychain|print|bambu/.test(q)) || (b.id==="vault"&&/credit|money|higgs/.test(q)));
+  if(/ricky/.test(q) && /(text|message|write|ask)/.test(q)) return 'Here\'s one you can send:\n\n"Yo Ricky, your site\'s been live for a bit. Have you had a chance to click around? Send a test booking so the form gets activated, and tell me anything you want changed. Pics, wording, colors, whatever."';
+  if(b) return `${b.name}: ${b.status}, ${Math.round(b.progress*100)}%.\nNow: ${b.now}\nNext: ${b.next}`;
+  if(/next|todo|to do|priority|plan/.test(q)) return "Here's the order:\n- Finish Fratesi's fixes\n- Clock Tower (scheduled tasks)\n- Client agreement\n- Fratesi's keychains\n- Bern's List reservation links";
+  if(/lot|build next|idea/.test(q)) return "The Open Lot is free. Tell Claude what you want there and it gets its own building.";
+  return briefing()+"\n\nI'm running on local power here, so I know the city but can't think freely. Open me inside Claude for the full brain.";
+}
+
+// Start with the camera on the HQ side
+camT=cam=0;
+</script>
+
+</body></html>
